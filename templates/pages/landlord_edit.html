@@ -1,0 +1,28 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Edit Property | RentEase{% endblock %}
+
+{% block content %}
+<h2>Edit Property #{{ property_id }}</h2>
+<form>
+  <div class="mb-3">
+    <label>Description</label>
+    <textarea class="form-control">Current description…</textarea>
+  </div>
+
+  <div class="mb-3">
+    <label>Price</label>
+    <input type="number" class="form-control" value="10000">
+  </div>
+
+  <div class="mb-3">
+    <label>Status</label>
+    <select class="form-select">
+      <option>Available</option>
+      <option>Rented</option>
+    </select>
+  </div>
+
+  <button class="btn btn-primary">Save Changes</button>
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Profile | RentEase{% endblock %}
+
+{% block content %}
+<h2>Your Profile</h2>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <p><strong>Name:</strong> John Doe</p>
+    <p><strong>Email:</strong> john@example.com</p>
+    <button class="btn btn-sm btn-primary">Edit Profile</button>
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger ms-2">Logout</a>
+  </div>
+</div>
+{% endblock %}

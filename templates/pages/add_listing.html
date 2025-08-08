@@ -1,0 +1,44 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Add New Listing | RentEase{% endblock %}
+
+{% block content %}
+<h2>Add New Listing</h2>
+<form>
+  <div class="mb-3">
+    <label for="title" class="form-label">Property Title</label>
+    <input type="text" id="title" class="form-control" placeholder="e.g. Cozy Studio Apartment">
+  </div>
+
+  <div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea id="description" class="form-control" rows="3" placeholder="Describe the property"></textarea>
+  </div>
+
+  <div class="mb-3">
+    <label for="price" class="form-label">Price (₱)</label>
+    <input type="number" id="price" class="form-control" placeholder="e.g. 10000">
+  </div>
+
+  <div class="mb-3">
+    <label for="location" class="form-label">Location</label>
+    <input type="text" id="location" class="form-control" placeholder="e.g. Downtown Butuan">
+  </div>
+
+  <div class="mb-3">
+    <label for="type" class="form-label">Property Type</label>
+    <select id="type" class="form-select">
+      <option>Apartment</option>
+      <option>House</option>
+      <option>Studio</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label for="image" class="form-label">Upload Image</label>
+    <input type="file" id="image" class="form-control">
+  </div>
+
+  <button type="submit" class="btn btn-primary">Add Listing</button>
+</form>
+{% endblock %}

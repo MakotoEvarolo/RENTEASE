@@ -1,0 +1,157 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Home | RentEase{% endblock %}
+
+{% block extra_head %}
+<style>
+  .featured-banner {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .featured-banner img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+  .featured-banner .banner-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(0,0,0,0.35);
+    font-size: 2rem;
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .user-profile-info {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10;
+  }
+  .user-profile-info img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .category-pills {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .category-pill {
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    background: #f3f3f3;
+    font-weight: 500;
+    border: none;
+    outline: none;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .category-pill.active, .category-pill:focus {
+    background: #222;
+    color: #fff;
+  }
+  .property-card {
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    overflow: hidden;
+    background: #fff;
+    margin-bottom: 1.5rem;
+  }
+  .property-card img {
+    height: 140px;
+    object-fit: cover;
+    width: 100%;
+  }
+  .property-meta {
+    font-size: 0.95rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between mb-4" style="gap: 2rem;">
+  <!-- Logo Placeholder -->
+  <div style="min-width:120px; max-width:140px;">
+    <img src="/static/images/logo-placeholder.png" alt="Logo" style="width:100%; max-width:120px;">
+  </div>
+  <!-- Banner Centered -->
+  <div class="flex-grow-1 d-flex justify-content-center">
+    <div class="featured-banner" style="width: 100%; max-width: 600px;">
+      <img src="/static/images/Whistlers_Mother_high_res.jpg" alt="Featured Property">
+      <div class="banner-text">
+        <div>New Properties</div>
+        <div style="font-size:1.2rem; font-weight:400;">For you to stay</div>
+      </div>
+    </div>
+  </div>
+  <!-- User Profile Info -->
+  <div class="user-profile-info" style="position:static; margin-bottom:0;">
+    <div class="text-end">
+      <strong>Makoto Evarolo</strong><br>
+      <span style="font-size:0.95em; color:#888;">Tenant</span>
+    </div>
+    <img src="/static/images/avatar.jpg" alt="User Avatar">
+  </div>
+</div>
+
+<h5>Categories</h5>
+<div class="category-pills mb-3">
+  <button class="category-pill active"><i class="fas fa-building"></i> Apartment</button>
+  <button class="category-pill"><i class="fas fa-city"></i> Condo</button>
+  <button class="category-pill"><i class="fas fa-ellipsis-h"></i> Others</button>
+</div>
+
+<div class="row">
+  <div class="col-md-4 mb-4">
+    <div class="property-card">
+      <img src="/static/images/Whistlers_Mother_high_res.jpg" alt="Single Family House">
+      <div class="p-3">
+        <div class="property-meta mb-1"><i class="fas fa-map-marker-alt"></i> Libertad</div>
+        <div class="fw-bold">Single Family House</div>
+        <div class="text-end text-primary fw-semibold">25,000 PHP</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-4">
+    <div class="property-card">
+      <img src="/static/images/Whistlers_Mother_high_res.jpg" alt="Kominka">
+      <div class="p-3">
+        <div class="property-meta mb-1"><i class="fas fa-map-marker-alt"></i> Baan</div>
+        <div class="fw-bold">Kominka</div>
+        <div class="text-end text-primary fw-semibold">15,000 PHP</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-4">
+    <div class="property-card">
+      <img src="/static/images/Whistlers_Mother_high_res.jpg" alt="Apartment">
+      <div class="p-3">
+        <div class="property-meta mb-1"><i class="fas fa-map-marker-alt"></i> Ongyiu</div>
+        <div class="fw-bold">Apartment</div>
+        <div class="text-end text-primary fw-semibold">10,000 PHP</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

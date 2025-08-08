@@ -1,0 +1,11 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Rental Detail | RentEase{% endblock %}
+
+{% block content %}
+<h2>Rental Property #{{ rental_id }}</h2>
+<img src="/static/images/sample1.jpg" class="img-fluid mb-3 rounded shadow">
+<p>Description of property…</p>
+<p><strong>Price:</strong> ₱10,000/month</p>
+<a href="#" class="btn btn-success btn-lg">Rent Now!</a>
+{% endblock %}

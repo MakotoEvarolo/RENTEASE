@@ -1,0 +1,106 @@
+{% extends 'base/users.html' %}
+
+{% block title %}Maps & Listings | RentEase{% endblock %}
+
+{% block extra_head %}
+<style>
+  .map-listings-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  .map-section {
+    flex: 2;
+    min-width: 350px;
+  }
+  .listings-section {
+    flex: 1.2;
+    min-width: 320px;
+  }
+  #map { height: 400px; margin-bottom: 1rem; }
+  .map-buttons .btn { margin-right: .5rem; margin-bottom: .5rem; }
+  .listing-card { margin-bottom: 1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-listings-container">
+  <div class="map-section">
+    <h2>Butuan City Maps</h2>
+    <p>Select a map layer to view:</p>
+    <div class="map-buttons">
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('base')">Base Map</button>
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('storm')">Storm Surge</button>
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('sea')">Sea Level Rise</button>
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('flood')">Flood Hazard</button>
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('liq')">Liquefaction</button>
+      <button class="btn btn-outline-primary btn-sm" onclick="showLayer('subdiv')">Subdivisions</button>
+    </div>
+    <div id="map"></div>
+    <!-- Legend Example (customize as needed) -->
+    <div style="margin-top:1rem;">
+      <strong>LEGEND</strong><br>
+      <div><span style="border:2px solid #000; padding:0 10px; margin-right:5px;"></span> Butuan Boundary</div>
+      <div><span style="border:2px dashed #000; padding:0 10px; margin-right:5px;"></span> Barangay Boundaries</div>
+      <div style="margin-top:10px;">
+        <span class="badge bg-secondary">Flood Hazard</span>
+        <span class="badge bg-primary">Base Map</span>
+        <span class="badge bg-info text-dark">Storm Surge</span>
+        <span class="badge bg-danger">Sea Level Rise</span>
+        <span class="badge bg-warning text-dark">Liquefaction</span>
+      </div>
+    </div>
+  </div>
+  <div class="listings-section">
+    <div class="bg-white rounded shadow p-3" style="min-width:320px;">
+      <!-- Filter Bar -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3" style="border-bottom:1px solid #eee; padding-bottom:0.5rem;">
+        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button">For Rent</button>
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button">Price</button>
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button">Beds & Bath</button>
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button">Home Type</button>
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button">More</button>
+        <button class="btn btn-sm btn-success ms-auto">Save Searches</button>
+      </div>
+      <h2 class="mb-3">Rental Listings</h2>
+      <div class="mb-3">
+        <input type="text" placeholder="Search by location…" class="form-control">
+      </div>
+      <div class="row">
+        <div class="col-12 listing-card">
+          <div class="card shadow-sm">
+            <img src="/static/images/sample1.jpg" class="card-img-top">
+            <div class="card-body">
+              <h6>Studio Apartment</h6>
+              <p>₱10,000/mo • Downtown</p>
+              <a href="{{ url_for('rental_detail', rental_id=1) }}" class="btn btn-sm btn-primary">View</a>
+            </div>
+          </div>
+        </div>
+        <!-- Add more listing cards here as needed -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const map = L.map('map').setView([8.9475, 125.5406], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+const layers = {
+  base: L.marker([8.9475, 125.5406]).bindPopup("Base Map Layer"),
+  storm: L.circle([8.9475, 125.54], {radius:500, color:'blue'}).bindPopup("Storm Surge"),
+  sea: L.circle([8.95, 125.54], {radius:500, color:'red'}).bindPopup("Sea Level Rise"),
+  flood: L.circle([8.945, 125.54], {radius:500, color:'purple'}).bindPopup("Flood Hazard"),
+  liq: L.circle([8.943, 125.54], {radius:500, color:'orange'}).bindPopup("Liquefaction"),
+  subdiv: L.polygon([[8.94,125.53],[8.95,125.54],[8.94,125.55]], {color:'cyan'}).bindPopup("Subdivisions")
+};
+
+function showLayer(name) {
+  Object.values(layers).forEach(layer => map.removeLayer(layer));
+  layers[name].addTo(map);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base/admin.html' %}
+
+{% block title %}Admin Rental Requests | RentEase{% endblock %}
+
+{% block content %}
+<h2>Manage Rental Requests</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Property</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for request in requests %}
+        <tr>
+            <td>{{ request.id }}</td>
+            <td>{{ request.user.name }}</td>
+            <td>{{ request.property.title }}</td>
+            <td>{{ request.status }}</td>
+            <td>{{ request.date.strftime('%Y-%m-%d') }}</td>
+            <td>
+                <a href="#" class="btn btn-success btn-sm">Approve</a>
+                <a href="#" class="btn btn-danger btn-sm">Reject</a>
+                <a href="#" class="btn btn-info btn-sm">View</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No rental requests found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
