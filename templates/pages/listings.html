@@ -24,6 +24,9 @@
 {% endblock %}
 
 {% block content %}
+{% if landlord_view %}
+  <div class="alert alert-info mt-4">Only tenants can browse listings. As a landlord, you can manage your listings from your dashboard.</div>
+{% else %}
 <div class="map-listings-container">
   <div class="map-section">
     <h2>Butuan City Maps</h2>
@@ -67,21 +70,27 @@
         <input type="text" placeholder="Search by location…" class="form-control">
       </div>
       <div class="row">
+        {% for property in listings %}
         <div class="col-12 listing-card">
           <div class="card shadow-sm">
             <img src="/static/images/sample1.jpg" class="card-img-top">
             <div class="card-body">
-              <h6>Studio Apartment</h6>
-              <p>₱10,000/mo • Downtown</p>
-              <a href="{{ url_for('rental_detail', rental_id=1) }}" class="btn btn-sm btn-primary">View</a>
+              <h6>{{ property.title }}</h6>
+              <p>{{ property.price }}/mo • {{ property.address }}</p>
+              <a href="{{ url_for('rental_detail', rental_id=property.id) }}" class="btn btn-sm btn-primary">View</a>
             </div>
           </div>
         </div>
-        <!-- Add more listing cards here as needed -->
+        {% else %}
+        <div class="col-12">
+          <p>No listings found.</p>
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
@@ -104,3 +113,4 @@ function showLayer(name) {
 }
 </script>
 {% endblock %}
+

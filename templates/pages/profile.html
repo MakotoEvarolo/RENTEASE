@@ -6,8 +6,22 @@
 <h2>Your Profile</h2>
 <div class="card shadow-sm">
   <div class="card-body">
-    <p><strong>Name:</strong> John Doe</p>
-    <p><strong>Email:</strong> john@example.com</p>
+    <p><strong>Name:</strong> {{ user.name }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Status:</strong>
+      {% if user.verified %}
+        <span class="badge bg-success">Verified</span>
+      {% elif user.verification_requested %}
+        <span class="badge bg-warning text-dark">Pending Verification</span>
+      {% else %}
+        <span class="badge bg-secondary">Not Verified</span>
+      {% endif %}
+    </p>
+    {% if not user.verified and not user.verification_requested %}
+      <form method="POST" action="{{ url_for('request_verification') }}">
+        <button type="submit" class="btn btn-info">Verify My Account</button>
+      </form>
+    {% endif %}
     <button class="btn btn-sm btn-primary">Edit Profile</button>
     <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger ms-2">Logout</a>
   </div>

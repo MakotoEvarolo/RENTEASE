@@ -3,12 +3,15 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint
+from flask_socketio import SocketIO, join_room, leave_room, emit
+from sqlalchemy import or_, and_
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Needed for session
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rentease.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+socketio = SocketIO(app)
 
 class User(db.Model):
     __tablename__ = 'tbl_users'
@@ -18,6 +21,8 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     contact = db.Column(db.String(255))
     role = db.Column(db.String(50), nullable=False)  # 'tenant' or 'landlord'
+    verified = db.Column(db.Boolean, default=False)
+    verification_requested = db.Column(db.Boolean, default=False)
     properties = db.relationship('Property', backref='owner', lazy=True)
 
 class Property(db.Model):
@@ -31,6 +36,7 @@ class Property(db.Model):
     type = db.Column(db.String(50))  # ENUM: Apartment, House, Condo, etc.
     status = db.Column(db.String(50))  # ENUM: Available, Rented, etc.
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
+    verified = db.Column(db.Boolean, default=False)
     location = db.relationship('Location', uselist=False, backref='property')
     images = db.relationship('Image', backref='property', lazy=True)
 
@@ -120,6 +126,9 @@ def register():
         if password != confirm_password:
             flash('Passwords do not match.', 'danger')
             return render_template('auth/register.html')
+        if user_type not in ['tenant', 'landlord']:
+            flash('Invalid user type.', 'danger')
+            return render_template('auth/register.html')
 
         hashed_password = generate_password_hash(password)
         new_user = User(name=name, email=email, password=hashed_password, contact=contact, role=user_type)
@@ -136,15 +145,47 @@ def home():
 
 @app.route('/listings')
 def listings():
-    return render_template('pages/listings.html')
+    if 'user_id' not in session:
+        flash('Please log in.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    if not user.verified:
+        flash('You must be verified to browse listings.', 'warning')
+        return redirect(url_for('profile'))
+    listings = Property.query.filter_by(verified=True).all()
+    return render_template('pages/listings.html', listings=listings, user=user)
 
 @app.route('/rental/<int:rental_id>')
 def rental_detail(rental_id):
-    return render_template('pages/rental_detail.html', rental_id=rental_id)
+    property = Property.query.get_or_404(rental_id)
+    landlord = User.query.get(property.user_id)
+    return render_template('pages/rental_detail.html', rental_id=rental_id, property=property, landlord=landlord)
 
 @app.route('/messages')
 def messages():
-    return render_template('pages/messages.html')
+    if 'user_id' not in session:
+        flash('Please log in.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    # Get all users this user has messaged or received messages from
+    user_id = session['user_id']
+    # Find all unique user ids in conversations
+    sent = db.session.query(UserMessage.receiver_id).filter_by(sender_id=user_id)
+    received = db.session.query(UserMessage.sender_id).filter_by(receiver_id=user_id)
+    user_ids = set([uid for (uid,) in sent] + [uid for (uid,) in received])
+    user_ids.discard(user_id)
+    conversations = User.query.filter(User.id.in_(user_ids)).all() if user_ids else []
+    # Get selected conversation
+    other_id = request.args.get('user')
+    messages_history = []
+    other_user = None
+    if other_id:
+        other_user = User.query.get(int(other_id))
+        messages_history = UserMessage.query.filter(
+            or_(and_(UserMessage.sender_id==user_id, UserMessage.receiver_id==other_id),
+                 and_(UserMessage.sender_id==other_id, UserMessage.receiver_id==user_id))
+        ).order_by(UserMessage.timestamp.asc()).all()
+    return render_template('pages/messages.html', user=user, conversations=conversations, messages_history=messages_history, other_user=other_user)
 
 @app.route('/reviews')
 def reviews():
@@ -152,19 +193,100 @@ def reviews():
 
 @app.route('/landlord/dashboard')
 def landlord_dashboard():
-    return render_template('pages/landlord_dashboard.html')
+    if 'role' not in session or session['role'] != 'landlord':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    user = User.query.get(session['user_id'])
+    properties = Property.query.filter_by(user_id=session['user_id']).all()
+    return render_template('pages/landlord_dashboard.html', properties=properties, user=user)
 
-@app.route('/landlord/add')
+@app.route('/landlord/delete/<int:property_id>', methods=['POST'])
+def delete_listing(property_id):
+    if 'role' not in session or session['role'] != 'landlord':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    property = Property.query.get_or_404(property_id)
+    if property.user_id != session['user_id']:
+        flash('You do not have permission to delete this listing.', 'danger')
+        return redirect(url_for('landlord_dashboard'))
+    db.session.delete(property)
+    db.session.commit()
+    flash('Listing deleted successfully!', 'info')
+    return redirect(url_for('landlord_dashboard'))
+
+@app.route('/landlord/add', methods=['GET', 'POST'])
 def add_listing():
-    return render_template('pages/add_listing.html')
+    # Only allow landlords
+    if 'role' not in session or session['role'] != 'landlord':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    user = User.query.get(session['user_id'])
+    if not user.verified:
+        return render_template('pages/add_listing.html', user=user)
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        price = request.form.get('price')
+        address = request.form.get('address')
+        type_ = request.form.get('type')
+        user_id = session['user_id']
+        new_property = Property(
+            title=title,
+            description=description,
+            price=price,
+            address=address,
+            type=type_,
+            user_id=user_id,
+            status='Available',
+            verified=False
+        )
+        db.session.add(new_property)
+        db.session.commit()
+        flash('Listing added successfully! Awaiting admin verification.', 'success')
+        return redirect(url_for('landlord_dashboard'))
+    return render_template('pages/add_listing.html', user=user)
 
-@app.route('/landlord/edit/<int:property_id>')
+@app.route('/landlord/edit/<int:property_id>', methods=['GET', 'POST'])
 def landlord_edit(property_id):
-    return render_template('pages/landlord_edit.html', property_id=property_id)
+    # Only allow landlords
+    if 'role' not in session or session['role'] != 'landlord':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    property = Property.query.get_or_404(property_id)
+    if property.user_id != session['user_id']:
+        flash('You do not have permission to edit this listing.', 'danger')
+        return redirect(url_for('landlord_dashboard'))
+    if request.method == 'POST':
+        property.title = request.form.get('title')
+        property.description = request.form.get('description')
+        property.price = request.form.get('price')
+        property.address = request.form.get('address')
+        property.type = request.form.get('type')
+        property.status = request.form.get('status')
+        db.session.commit()
+        flash('Listing updated successfully!', 'success')
+        return redirect(url_for('landlord_dashboard'))
+    return render_template('pages/landlord_edit.html', property=property)
 
 @app.route('/profile')
 def profile():
-    return render_template('pages/profile.html')
+    if 'user_id' not in session:
+        flash('Please log in.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    return render_template('pages/profile.html', user=user)
+
+@app.route('/request_verification', methods=['POST'])
+def request_verification():
+    if 'user_id' not in session:
+        flash('Please log in.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    if not user.verified and not user.verification_requested:
+        user.verification_requested = True
+        db.session.commit()
+        flash('Verification request sent. Please wait for admin approval.', 'info')
+    return redirect(url_for('profile'))
 
 @app.route('/logout')
 def logout():
@@ -280,29 +402,99 @@ def admin_view_request(request_id):
     request_obj = None
     return render_template('pages/admin_view_request.html', request=request_obj)
 
+@app.route('/admin/verify_users', methods=['GET', 'POST'])
+def admin_verify_users():
+    if 'role' not in session or session['role'] != 'admin':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        user_id = int(request.form.get('user_id'))
+        action = request.form.get('action')
+        user = User.query.get(user_id)
+        if user:
+            if action == 'approve':
+                user.verified = True
+                user.verification_requested = False
+                db.session.commit()
+                flash(f'User {user.name} verified.', 'success')
+            elif action == 'reject':
+                user.verification_requested = False
+                db.session.commit()
+                flash(f'User {user.name} verification rejected.', 'info')
+    pending_users = User.query.filter_by(verification_requested=True).all()
+    return render_template('pages/admin_verify_users.html', pending_users=pending_users)
+
+@app.route('/admin/verify_listings', methods=['GET', 'POST'])
+def admin_verify_listings():
+    if 'role' not in session or session['role'] != 'admin':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        property_id = int(request.form.get('property_id'))
+        action = request.form.get('action')
+        prop = Property.query.get(property_id)
+        if prop:
+            if action == 'approve':
+                prop.verified = True
+                db.session.commit()
+                flash(f'Listing {prop.title} verified.', 'success')
+            elif action == 'reject':
+                db.session.delete(prop)
+                db.session.commit()
+                flash(f'Listing {prop.title} rejected and deleted.', 'info')
+    pending_listings = Property.query.filter_by(verified=False).all()
+    return render_template('pages/admin_verify_listings.html', pending_listings=pending_listings)
+
+# --- SocketIO Events for Real-Time Messaging ---
+@socketio.on('join_room')
+def handle_join_room(data):
+    room = data['room']
+    join_room(room)
+
+@socketio.on('leave_room')
+def handle_leave_room(data):
+    room = data['room']
+    leave_room(room)
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    sender_id = data['sender_id']
+    receiver_id = data['receiver_id']
+    content = data['content']
+    room = data['room']
+    # Save message to DB
+    msg = UserMessage(sender_id=sender_id, receiver_id=receiver_id, content=content)
+    db.session.add(msg)
+    db.session.commit()
+    emit('receive_message', {
+        'sender_id': sender_id,
+        'receiver_id': receiver_id,
+        'content': content,
+        'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    }, room=room)
+
 # --- Ensure admin role is supported in User model (already present as 'role' field) ---
 
 # --- Add a route to create a default admin user if not exists ---
 
-def ensure_admin_exists():
-    admin_email = 'admin@rentease.com'
-    existing_admin = User.query.filter_by(email=admin_email).first()
-    if not existing_admin:
+# Call this function on app startup
+with app.app_context():
+    # Create all database tables
+    db.create_all()
+    # Insert static admin user if not exists
+    from sqlalchemy import exists
+    if not db.session.query(exists().where(User.email == 'admin@rentease.com')).scalar():
         admin = User(
             name='Admin',
-            email=admin_email,
-            password=generate_password_hash('admin123'),
+            email='admin@rentease.com',
+            password=generate_password_hash('admin321'),
             contact='0000000000',
             role='admin'
         )
         db.session.add(admin)
         db.session.commit()
 
-# Call this function on app startup
-with app.app_context():
-    ensure_admin_exists()
-
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
 

@@ -4,41 +4,37 @@
 
 {% block content %}
 <h2>Add New Listing</h2>
-<form>
+{% if session['role'] == 'landlord' and user.verified %}
+<form method="POST">
   <div class="mb-3">
     <label for="title" class="form-label">Property Title</label>
-    <input type="text" id="title" class="form-control" placeholder="e.g. Cozy Studio Apartment">
+    <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Cozy Studio Apartment" required>
   </div>
-
   <div class="mb-3">
     <label for="description" class="form-label">Description</label>
-    <textarea id="description" class="form-control" rows="3" placeholder="Describe the property"></textarea>
+    <textarea id="description" name="description" class="form-control" rows="3" placeholder="Describe the property" required></textarea>
   </div>
-
   <div class="mb-3">
     <label for="price" class="form-label">Price (₱)</label>
-    <input type="number" id="price" class="form-control" placeholder="e.g. 10000">
+    <input type="number" id="price" name="price" class="form-control" placeholder="e.g. 10000" required>
   </div>
-
   <div class="mb-3">
-    <label for="location" class="form-label">Location</label>
-    <input type="text" id="location" class="form-control" placeholder="e.g. Downtown Butuan">
+    <label for="address" class="form-label">Location</label>
+    <input type="text" id="address" name="address" class="form-control" placeholder="e.g. Downtown Butuan" required>
   </div>
-
   <div class="mb-3">
     <label for="type" class="form-label">Property Type</label>
-    <select id="type" class="form-select">
+    <select id="type" name="type" class="form-select" required>
       <option>Apartment</option>
       <option>House</option>
       <option>Studio</option>
     </select>
   </div>
-
-  <div class="mb-3">
-    <label for="image" class="form-label">Upload Image</label>
-    <input type="file" id="image" class="form-control">
-  </div>
-
   <button type="submit" class="btn btn-primary">Add Listing</button>
 </form>
+{% elif session['role'] == 'landlord' %}
+  <div class="alert alert-warning">You must be verified to add listings.</div>
+{% else %}
+<p>You do not have permission to add listings.</p>
+{% endif %}
 {% endblock %}

@@ -54,6 +54,14 @@ body {
   <a href="{{ url_for('listings') }}" class="{% if 'listings' in request.path %}active{% endif %}">
     <i class="fas fa-list"></i><br>Listings
   </a>
+  {% if session['role'] == 'landlord' %}
+    <a href="{{ url_for('add_listing') }}" class="{% if 'add' in request.path %}active{% endif %}">
+      <i class="fas fa-plus"></i><br>Add Listing
+    </a>
+    <a href="{{ url_for('landlord_dashboard') }}" class="{% if 'landlord/dashboard' in request.path %}active{% endif %}">
+      <i class="fas fa-briefcase"></i><br>Dashboard
+    </a>
+  {% endif %}
   <a href="{{ url_for('messages') }}" class="{% if 'messages' in request.path %}active{% endif %}">
     <i class="fas fa-envelope"></i><br>Messages
   </a>

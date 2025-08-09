@@ -4,6 +4,10 @@
 
 {% block content %}
 <h2>Admin Dashboard</h2>
+<div class="mb-4">
+  <a href="{{ url_for('admin_verify_users') }}" class="btn btn-info me-2">Verify Users</a>
+  <a href="{{ url_for('admin_verify_listings') }}" class="btn btn-warning">Verify Listings</a>
+</div>
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card text-bg-primary mb-3">

@@ -40,6 +40,8 @@
             <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Dashboard</a>
             <a href="{{ url_for('admin_listings') }}" class="{% if request.endpoint == 'admin_listings' %}active{% endif %}">Listings</a>
             <a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}">Users</a>
+            <a href="{{ url_for('admin_verify_users') }}" class="{% if request.endpoint == 'admin_verify_users' %}active{% endif %}">Verify Users</a>
+            <a href="{{ url_for('admin_verify_listings') }}" class="{% if request.endpoint == 'admin_verify_listings' %}active{% endif %}">Verify Listings</a>
             <a href="{{ url_for('admin_requests') }}" class="{% if request.endpoint == 'admin_requests' %}active{% endif %}">Rental Requests</a>
             <a href="{{ url_for('logout') }}">Logout</a>
         </nav>

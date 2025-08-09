@@ -4,10 +4,81 @@
 
 {% block content %}
 <h2>Messages</h2>
-<div class="card shadow-sm">
-  <div class="card-body">
-    <p><strong>Landlord:</strong> Hi! Is the unit still available?</p>
-    <input type="text" class="form-control mt-2" placeholder="Type a reply…">
+<div class="row">
+  <div class="col-md-4">
+    <div class="list-group">
+      <div class="list-group-item active">Conversations</div>
+      {% for convo in conversations %}
+        <a href="{{ url_for('messages', user=convo.id) }}" class="list-group-item list-group-item-action {% if other_user and other_user.id == convo.id %}active{% endif %}">
+          {{ convo.name }}<br><small>{{ convo.email }}</small>
+        </a>
+      {% else %}
+        <div class="list-group-item">No conversations yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-md-8">
+    {% if other_user %}
+      <div class="card shadow-sm mb-3">
+        <div class="card-header"><strong>Chat with {{ other_user.name }}</strong></div>
+        <div class="card-body" style="height:300px; overflow-y:auto;" id="chatMessages">
+          {% for msg in messages_history %}
+            <div class="mb-2">
+              <b>{{ 'You' if msg.sender_id == user.id else other_user.name }}:</b> {{ msg.content }}
+              <span style="font-size:0.8em;color:#888;">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="card-footer">
+          <div class="input-group">
+            <input type="text" id="chatInput" class="form-control" placeholder="Type your message...">
+            <button class="btn btn-primary" id="sendMsgBtn">Send</button>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="alert alert-info">Select a conversation to start chatting.</div>
+    {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const userId = {{ user.id|tojson }};
+const otherId = {% if other_user %}{{ other_user.id|tojson }}{% else %}null{% endif %};
+const otherName = {% if other_user %}{{ other_user.name|tojson }}{% else %}null{% endif %};
+const room = (otherId !== null) ? `chat_${Math.min(userId, otherId)}_${Math.max(userId, otherId)}` : null;
+let socket;
+function scrollChatToBottom() {
+  const chatMessages = document.getElementById('chatMessages');
+  if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+scrollChatToBottom();
+if (room) {
+  socket = io();
+  socket.emit('join_room', { room: room });
+  socket.on('receive_message', function(data) {
+    if (data.sender_id == userId || data.sender_id == otherId) {
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML += `<div class='mb-2'><b>${data.sender_id == userId ? 'You' : otherName}:</b> ${data.content} <span style='font-size:0.8em;color:#888;'>${data.timestamp}</span></div>`;
+      scrollChatToBottom();
+    }
+  });
+  document.getElementById('sendMsgBtn').addEventListener('click', function() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (msg && socket) {
+      socket.emit('send_message', {
+        sender_id: userId,
+        receiver_id: otherId,
+        content: msg,
+        room: room
+      });
+      input.value = '';
+    }
+  });
+}
+</script>
 {% endblock %}
